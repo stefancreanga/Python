@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask CRUD App</title>
+</head>
+<body>
+    <h1>Welcome to the Flask CRUD App</h1>
+
+    <!-- Form to add a user -->
+    <form id="addUserForm">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <button type="submit">Add User</button>
+    </form>
+
+    <h2>Users List</h2>
+    <ul id="usersList"></ul>
+
+    <!-- Form to update a user -->
+    <h3>Update User</h3>
+    <form id="updateUserForm" style="display:none;">
+        <input type="hidden" id="updateUserId">
+        <input type="text" id="updateUserName" placeholder="Name" required>
+        <input type="email" id="updateUserEmail" placeholder="Email" required>
+        <button type="submit">Update User</button>
+    </form>
+
+    <script>
+        // Fetch all users and display them
+        async function fetchUsers() {
+            const response = await fetch("/users");
+            const users = await response.json();
+            const usersList = document.getElementById("usersList");
+            usersList.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = `${user.name} (${user.email})`;
+
+                // Create update and delete buttons for each user
+                const updateButton = document.createElement('button');
+                updateButton.textContent = "Update";
+                updateButton.onclick = () => showUpdateForm(user.id, user.name, user.email);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = "Delete";
+                deleteButton.onclick = () => deleteUser(user.id);
+
+                li.appendChild(updateButton);
+                li.appendChild(deleteButton);
+
+                usersList.appendChild(li);
+            });
+        }
+
+        // Add a new user via API
+        document.getElementById("addUserForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+
+            await fetch("/user", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name, email })
+            });
+
+            fetchUsers();  // Refresh the list
+        });
+
+        // Show the update form with pre-filled data
+        function showUpdateForm(id, name, email) {
+            document.getElementById("updateUserId").value = id;
+            document.getElementById("updateUserName").value = name;
+            document.getElementById("updateUserEmail").value = email;
+            document.getElementById("updateUserForm").style.display = "block";
+        }
+
+        // Update a user via API
+        document.getElementById("updateUserForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const id = document.getElementById("updateUserId").value;
+            const name = document.getElementById("updateUserName").value;
+            const email = document.getElementById("updateUserEmail").value;
+
+            await fetch(`/user/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name, email })
+            });
+
+            fetchUsers();  // Refresh the list
+            document.getElementById("updateUserForm").style.display = "none";  // Hide the update form
+        });
+
+        // Delete a user via API
+        async function deleteUser(id) {
+            await fetch(`/user/${id}`, {
+                method: "DELETE"
+            });
+
+            fetchUsers();  // Refresh the list
+        }
+
+        // Initial fetch to display users when the page loads
+        fetchUsers();
+    </script>
+</body>
+</html>
